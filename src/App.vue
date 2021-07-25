@@ -39,10 +39,14 @@
         <h2>Round:</h2>
         <span>{{rounds}}</span>
       </div>
+       <div class="current-round centered">
+        <h2>Draw:</h2>
+        <span>{{draw}}</span>
+      </div>
     </div>
     <div class="board centered">
       <div class="row centered" v-for="(_, rowIndex) in board.length" :key="rowIndex">
-        <div class="col centered" v-for="(_, colIndex) in board.length" :key="colIndex" @click="play(rowIndex,colIndex,$event)">{{board[rowIndex][colIndex]}}</div>
+        <div class="col centered" v-for="(_, colIndex) in board.length" :key="colIndex" :id="`${rowIndex}${colIndex}`" @click="play(rowIndex,colIndex,$event)">{{board[rowIndex][colIndex]}}</div>
       </div>
     </div>
     <div class="signature">
@@ -69,6 +73,7 @@ export default {
         o: 0
       },
       moves: 0,
+      draw: 0,
     }
   },
   created() {
@@ -80,7 +85,6 @@ export default {
       if(this.hasCorrectSize) {
         this.boardSize = Number(this.enteredSize);
         this.clearBoard();
-        this.resetGame();
       }
     },
     start() {
@@ -90,34 +94,49 @@ export default {
       this.$confetti.stop();
     },
     play(row,col,ev) {
-        if (!this.board[row][col]) {
-          this.board[row][col] = this.currentPlayer;
-          ev.target.textContent = this.currentPlayer;
-          this.moves+=1;
-          if(this.hasWinner || this.moves===this.totalMoves) {
-            this.resetGame();
-            return;
+      if(!this.board[row][col]) {
+        this.makeMove(row,col,ev.target);
+      }
+      this.finishTurn();
+      this.currentPlayer = this.currentPlayer === 'x' ? 'o' : 'x';
+      setTimeout(() => {
+          let [x,y] = this.generateRandomPositions();
+          while (this.board[x][y]) {
+            [x,y] = this.generateRandomPositions();
           }
+          this.makeMove(x,y,document.getElementById(`${x}${y}`));
+          this.finishTurn();
           this.currentPlayer = this.currentPlayer === 'x' ? 'o' : 'x';
-        }
+        },400
+      )
     },
-    resetGame(){
-      if(this.moves === this.totalMoves || this.moves === 0){
+    finishTurn() {
+      if(this.hasWinner){
+        this.results[this.currentPlayer]++;
         this.clearBoard();
+        this.rounds++
         return;
       }
-      this.clearBoard();
-      this.moves = 0;
-      this.start();
-      this.results[this.currentPlayer] += 1;
-      this.rounds += 1;
-      setTimeout(
-          this.stop,3000
-      );
+      if(this.isDraw) {
+        this.draw++;
+        this.clearBoard();
+        this.rounds++
+        return;
+      }
+    },
+    makeMove(row,col,target){
+      target.textContent = this.currentPlayer;
+      this.board[row][col] = this.currentPlayer;
+      this.moves++;
+    },
+    generateRandomPositions() {
+      return [Math.floor(Math.random() * this.boardSize-1) + 1, Math.floor(Math.random() * this.boardSize-1) + 1];
     },
     clearBoard(){
       document.querySelectorAll('.col').forEach(e=>e.textContent="");
       this.board = [];
+      this.moves = 0;
+      this.currentPlayer = 'x';
       for (let step = 0; step < this.boardSize; step++) {
         let row = [];
         for (let step2 = 0; step2 < this.boardSize; step2++){
@@ -129,7 +148,7 @@ export default {
   },
   computed:{
     totalMoves(){
-      return this.boardSize*this.boardSize;
+      return this.boardSize * this.boardSize;
     },
     hasCorrectSize(){
       return Number(this.enteredSize) >= 3 && Number(this.enteredSize)<=5;
@@ -139,6 +158,7 @@ export default {
       for (let step = 0; step < this.boardSize; step++) {
         result.push(this.board[step].every( e  => e === this.currentPlayer));
       }
+
       return result.some(el=> el===true)
     },
     checkInCol() {
@@ -149,6 +169,7 @@ export default {
           colArr.push(this.board[step2][step]);
         }
         result.push(colArr.every( e  => e === this.currentPlayer));
+
       }
       return result.some(el=> el===true)
     },
@@ -163,6 +184,9 @@ export default {
       result.push(diagonal1.every( e  => e === this.currentPlayer));
       result.push(diagonal2.every( e  => e === this.currentPlayer));
       return result.some(el=> el===true);
+    },
+    isDraw() {
+      return this.totalMoves === this.moves
     },
     hasWinner() {
       return [this.checkInRow,this.checkInCol,this.checkInDiagonals].some(el=> el===true);
