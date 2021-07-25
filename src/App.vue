@@ -210,6 +210,10 @@ export default {
 .fade-enter-active, .fade-leave-active {
   transition: opacity 700ms;
 }
+input{
+  height: 20px;
+  width: 100px;
+}
  .fade-leave-active {
   opacity: 0;
 }
