@@ -115,6 +115,7 @@ export default {
         this.results[this.currentPlayer]++;
         this.clearBoard();
         this.rounds++
+        this.start();
         return;
       }
       if(this.isDraw) {
