@@ -114,8 +114,9 @@ export default {
       if(this.hasWinner){
         this.results[this.currentPlayer]++;
         this.clearBoard();
-        this.rounds++
+        this.rounds++;
         this.start();
+        setTimeout(()=>this.stop(),700);
         return;
       }
       if(this.isDraw) {
